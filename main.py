@@ -3,8 +3,10 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 from scipy.signal import find_peaks
+from datetime import datetime 
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import os
+import time
 
 # 关键点索引 (COCO格式)
 NOSE = 0
@@ -33,13 +35,19 @@ movenet = model.signatures['serving_default']
 cap = cv2.VideoCapture(1)  # 使用摄像头
 # cap = cv2.VideoCapture('video.mp4')  # 使用视频文件
 
-# 关键点历史记录
-elbow_angles = []
-shoulder_heights = []
-hip_heights = []
-frames = []
-pushup_count = 0
-is_down_position = False
+
+pushup_count = 0  # 数量记录
+is_down_position = False  # 姿态记录
+start_time = None  # 记录开始时间
+
+# 用于报告生成的数据
+analysis_data = {
+    'timestamps': [],
+    'elbow_angles': [],
+    'pushup_counts': [],
+    'frames': []
+}
+
 
 def calculate_angle(a, b, c):
     """计算三点之间的角度"""
@@ -107,7 +115,14 @@ def draw_keypoints(frame, keypoints, confidence_threshold=0.4):
 
 def analyze_frame(frame):
     """分析单帧图像，检测姿态并计数俯卧撑"""
-    global pushup_count, is_down_position
+    global pushup_count, is_down_position, start_time, analysis_data
+    
+    # 如果是第一次调用，记录开始时间
+    if start_time is None:
+        start_time = time.time()
+    
+    # 当前时间戳（秒）
+    current_time = time.time() - start_time
     
     # 检测关键点
     keypoints = detect_keypoints(frame)
@@ -135,9 +150,14 @@ def analyze_frame(frame):
             pushup_count += 1
             is_down_position = False
     
-    # 存储数据用于可视化
-    elbow_angles.append(avg_angle)
-    frames.append(frame.copy())
+    # 存储数据用于报告和视频
+    analysis_data['timestamps'].append(current_time)
+    analysis_data['elbow_angles'].append(avg_angle)
+    analysis_data['pushup_counts'].append(pushup_count)
+    
+    # 每隔0.5秒保存一帧用于视频生成
+    if len(analysis_data['frames']) == 0 or current_time - analysis_data['timestamps'][-1] >= 0.5:
+        analysis_data['frames'].append(frame.copy())
     
     # 在图像上绘制结果
     frame = draw_keypoints(frame, keypoints)
@@ -155,10 +175,24 @@ def analyze_frame(frame):
     cv2.putText(frame, f"Status: {status}", (20, 150), 
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 165, 255), 2)
     
+    # 显示时间
+    cv2.putText(frame, f"Time: {current_time:.1f}s", (20, 200), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+    
     return frame
 
 def realtime_analysis():
     """实时视频分析"""
+    global analysis_data
+    
+    # 重置分析数据
+    analysis_data = {
+        'timestamps': [],
+        'elbow_angles': [],
+        'pushup_counts': [],
+        'frames': []
+    }
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -178,75 +212,112 @@ def realtime_analysis():
     cv2.destroyAllWindows()
 
 def generate_analysis_report():
-    """生成俯卧撑分析报告"""
-    
-    if not elbow_angles:
+    """生成俯卧撑分析报告（含时间线计数）"""
+    if not analysis_data['timestamps']:
         print("No data to generate report")
         return
     
-    # 创建图表
-    plt.figure(figsize=(12, 8))
+    # 创建保存路径
+    os.makedirs('./report', exist_ok=True)
+    report_name = './report/report_' + datetime.now().strftime('%Y%m%d_%H%M%S')
     
-    # 肘部角度变化图
+    # 计算俯卧撑下压时刻（找角度最小的峰值）
+    peaks, _ = find_peaks([-x for x in analysis_data['elbow_angles']], height=-100, distance=10)
+    
+    # 创建图表
+    plt.figure(figsize=(14, 10))
+    
+    # 子图1：肘部角度变化图（使用真实时间）
     plt.subplot(2, 1, 1)
-    plt.plot(elbow_angles, 'b-', label='Elbow Angle')
+    plt.plot(analysis_data['timestamps'], analysis_data['elbow_angles'], 'b-', label='Elbow Angle')
     plt.axhline(y=90, color='r', linestyle='--', label='Down Threshold (90°)')
     plt.axhline(y=160, color='g', linestyle='--', label='Up Threshold (160°)')
     
-    # 标记俯卧撑动作
-    peaks, _ = find_peaks([-x for x in elbow_angles], height=-100, distance=10)
-    plt.plot(peaks, [elbow_angles[i] for i in peaks], 'ro', label='Pushup Down')
+    # 标记俯卧撑下压点
+    peak_times = [analysis_data['timestamps'][i] for i in peaks]
+    peak_angles = [analysis_data['elbow_angles'][i] for i in peaks]
+    plt.plot(peak_times, peak_angles, 'ro', label='Pushup Down')
     
     plt.title('Elbow Angle During Pushups')
-    plt.xlabel('Frame')
+    plt.xlabel('Time (seconds)')
     plt.ylabel('Angle (degrees)')
     plt.legend()
     plt.grid(True)
     
-    # 俯卧撑计数展示
+    # 子图2：俯卧撑累积计数随时间变化
     plt.subplot(2, 1, 2)
-    plt.bar(['Pushups'], [pushup_count], color='skyblue')
-    plt.title(f'Total Pushups: {pushup_count}')
-    plt.ylabel('Count')
-    plt.ylim(0, max(pushup_count + 2, 10))
+    plt.plot(analysis_data['timestamps'], analysis_data['pushup_counts'], color='skyblue', linewidth=2)
     
+    # 标记每个完成的俯卧撑
+    completed_pushups = []
+    for i in range(1, max(analysis_data['pushup_counts']) + 1):
+        # 找到计数变为i的时间点
+        idx = next(j for j, count in enumerate(analysis_data['pushup_counts']) if count >= i)
+        completed_pushups.append(analysis_data['timestamps'][idx])
+    
+    plt.plot(completed_pushups, range(1, len(completed_pushups) + 1), 'go', markersize=8, 
+             label='Completed Pushups')
+    
+    plt.title('Cumulative Pushup Count Over Time')
+    plt.xlabel('Time (seconds)')
+    plt.ylabel('Cumulative Pushups')
+    plt.ylim(0, max(analysis_data['pushup_counts']) + 1)
+    plt.grid(True)
+    plt.legend()
+    
+    # 添加整体统计信息
+    total_time = analysis_data['timestamps'][-1]
+    total_pushups = analysis_data['pushup_counts'][-1]
+    pushups_per_min = (total_pushups / total_time) * 60 if total_time > 0 else 0
+    
+    plt.figtext(0.5, 0.01, 
+                f"Total Pushups: {total_pushups} | Total Time: {total_time:.1f}s | Pushups/min: {pushups_per_min:.1f}",
+                ha="center", fontsize=12, bbox={"facecolor":"orange", "alpha":0.3, "pad":5})
+    
+    # 保存和展示
     plt.tight_layout()
-    plt.savefig('pushup_analysis_report.png')
+    plt.subplots_adjust(bottom=0.1)
+    plt.savefig(f'{report_name}.png', dpi=300)
     plt.show()
     
-    print(f"Analysis complete. Total pushups: {pushup_count}")
+    print(f"Analysis complete. Total pushups: {total_pushups}")
+    print(f"Report saved as {report_name}.png")
 
 def create_animation():
-    """创建关键帧动画"""
-    if not frames:
+    """创建关键帧动画并保存为 MP4 文件"""
+    if not analysis_data['frames']:
         print("No frames to create animation")
         return
     
-    fig, ax = plt.subplots()
-    im = ax.imshow(cv2.cvtColor(frames[0], cv2.COLOR_BGR2RGB))
-    ax.axis('off')
-    plt.title('Pushup Motion Analysis')
+    # 创建保存路径
+    os.makedirs('./video', exist_ok=True)
+    video_name = './video/video_' + datetime.now().strftime('%Y%m%d_%H%M%S')
     
-    def update(frame):
-        im.set_array(cv2.cvtColor(frames[frame], cv2.COLOR_BGR2RGB))
-        return [im]
+    # 获取视频尺寸
+    height, width, _ = analysis_data['frames'][0].shape
+    fps = 5  # 帧率
     
-    # 每5帧取一帧制作动画
-    step = max(1, len(frames) // 50)
-    ani = FuncAnimation(fig, update, frames=range(0, len(frames), step), 
-                       interval=100, blit=True)
+    # 创建 VideoWriter 对象
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(f'{video_name}.mp4', fourcc, fps, (width, height))
     
-    # 保存动画
-    ani.save('pushup_animation.gif', writer='pillow', fps=10)
-    plt.close()
+    # 写入所有保存的帧
+    for frame in analysis_data['frames']:
+        out.write(frame)
+    
+    out.release()
+    
+    print(f"Animation saved as {video_name}.mp4")
+    print(f"Video duration: {len(analysis_data['frames']) / fps:.1f} seconds")
+
 
 if __name__ == "__main__":
     # 运行实时分析
     realtime_analysis()
     
+    # 创建关键帧动画
+    create_animation()
+    
     # 生成分析报告
     generate_analysis_report()
     
-    # 创建关键帧动画
-    create_animation()
-
