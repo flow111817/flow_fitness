@@ -1,8 +1,6 @@
 import os
 import matplotlib.pyplot as plt
-import numpy as np
 from scipy.signal import find_peaks
-from datetime import datetime
 from config import OUTPUT_DIRS
 from . import utils
 import cv2
@@ -113,7 +111,7 @@ class ReportGenerator:
         
         # 获取视频尺寸
         height, width, _ = analysis_data['frames'][0].shape
-        fps = 5  # 帧率
+        fps = 20  # 帧率
         
         # 创建视频写入器
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')

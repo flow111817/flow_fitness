@@ -14,7 +14,8 @@ class PushupAnalyzer:
         """
         重置分析状态
         """
-
+        
+        self.frame_counter = 0
         self.pushup_count = 0
         self.is_down_position = False
         self.start_time = None
@@ -24,7 +25,7 @@ class PushupAnalyzer:
             'pushup_counts': [],
             'frames': []
         }
-    
+
     def analyze_frame(self, frame):
         """
         分析单帧图像，检测姿态并计数俯卧撑
@@ -38,7 +39,8 @@ class PushupAnalyzer:
         if self.start_time is None:
             self.start_time = time.time()
         current_time = time.time() - self.start_time
-        
+        self.frame_counter += 1
+
         # 检测关键点
         keypoints = self.pose_estimator.detect_keypoints(frame)
         
@@ -71,14 +73,20 @@ class PushupAnalyzer:
         self.analysis_data['pushup_counts'].append(self.pushup_count)
         
         # 采样帧用于视频生成
-        if (len(self.analysis_data['frames']) == 0 or 
-            current_time - self.analysis_data['timestamps'][-1] >= ANALYSIS_PARAMS['frame_sampling_interval']):
+        if self.frame_counter % 8 == 0 :
             self.analysis_data['frames'].append(frame.copy())
         
         return self._annotate_frame(frame, keypoints, avg_angle, current_time)
     
     def _get_keypoint_coord(self, frame, keypoints, keypoint_name):
-        """获取关键点坐标"""
+        """
+        获取关键点坐标
+        
+        输入：帧，关键点，关键点名称
+
+        输出：帧
+        """
+
         idx = KEYPOINT_INDICES[keypoint_name]
         kp = keypoints[idx]
         y, x, _ = frame.shape
