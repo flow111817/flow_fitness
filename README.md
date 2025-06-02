@@ -1,65 +1,36 @@
 # Fitness_optimization
-
-### **项目简介**
-
-基于movenet的轻量俯卧撑动作识别，支持实时计数，关键帧捕捉，动作可视化分析，适合健身的辅助工具
-
-
-
-### **项目特点**
-
-- ✅ 实时动作识别与计数
-- 🎥 关键帧动画保存为 MP4
-- 📊 计数结果可视化（横轴为真实时间）
-
-
-
-### **安装**
-
+###Project Introduction
+Lightweight push up motion recognition based on movenet, supporting real-time counting, keyframe capture, motion visualization analysis, suitable as an auxiliary tool for fitness
+###Project Features
+-  ✅  Real time action recognition and counting
+-  🎥  Save keyframe animation as MP4
+-  📊  Visualization of counting results (with real time on the horizontal axis)
+###Installation
 ```bash
-git clone https://github.com/yourusername/AwesomePushupCounter.git
-
+git clone  https://github.com/yourusername/AwesomePushupCounter.git
 cd AwesomePushupCounter
-
 pip install -r requirements.txt
-
 python main.py
 ```
-
-
-
-### **使用方法**
-
-main.py里面可以设置使用摄像头还是一段录像进行识别，config.py设置参数包括movenet-singlepose的参数，输出目录，分析参数
-
-
-
-### **项目结构**
-
+###Instructions for use
+In main. py, you can set whether to use a camera or a recorded video for recognition. In config. py, you can set parameters such as moving object, output directory, and analysis parameters
+###Project Structure
 ```
-├── data/					
-	├── output/				#输出文件
-		├── reports/		#图表报告
-		├── videos/			#视频输出
-	├── sameple_video/		#示例视频输入	
-├── src/					
-	├── code				#源码模块
-├── main.py					#主程序
-└── requirements.txt		依赖部分
+├── data/ 
+∝ - output/					# output file
+∝ - Reports/				# Chart Reports
+∝ - videos/					# video output
+∝ - sameple-video/			# Example video input
+├── src/ 
+∝ - Code 					# Source Code Module
+∝ - main. py 				# Main Program
+└ - Requirements. txt 
 ```
-
-
-
-### **后续计划**
-
-- 添加更多健身计划
-- 可部署至前端进行录像识别
-- 引入姿态评分
-- 接入语言模型进行动作指导
-- 对模型进行微调加强准确率
-
-
-
-### **贡献指南**
-
-欢迎提交 Pull Request！
+###Follow up plan
+-Add more fitness plans
+-Can be deployed to the front-end for video recognition
+-Introduce posture scoring
+-Integrating language models for action guidance
+-Fine tune the model to enhance accuracy
+###Contribution Guide
+Welcome to submit a Pull Request!
