@@ -1,3 +1,3 @@
 optimize.txt
-output/reports/*
-output/videos/*
+data/output/reports/*
+data/output/videos/*

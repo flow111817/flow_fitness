@@ -28,7 +28,7 @@ ANALYSIS_PARAMS = {
 }
 
 # 模型配置
-MODEL_URL = "https://tfhub.dev/google/movenet/singlepose/lightning/4"
+MODEL_URL = "https://tfhub.dev/google/movenet/singlepose/thunder/4"
 
 # 输出路径
 OUTPUT_DIRS = {

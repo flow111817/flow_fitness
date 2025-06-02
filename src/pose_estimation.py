@@ -20,7 +20,7 @@ class PoseEstimator:
 
         # 调整图像大小并转换为RGB
         img = frame.copy()
-        img = tf.image.resize_with_pad(tf.expand_dims(img, axis=0), 192, 192)
+        img = tf.image.resize_with_pad(tf.expand_dims(img, axis=0), 256, 256)
         input_img = tf.cast(img, dtype=tf.int32)
         
         # 运行模型推理
