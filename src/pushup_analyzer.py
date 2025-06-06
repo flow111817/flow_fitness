@@ -125,23 +125,20 @@ class PushupAnalyzer:
     
     def _draw_keypoints(self, frame, keypoints):
         """
-        在图像上绘制关键点和骨架
-        
-        输入：帧，关键点
-        
-        输出：帧
+        在图像上绘制关键点和骨架（通过旋转图像实现方向修正）
         """
+        # 顺时针旋转180度
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+        frame = cv2.flip(frame, 1)
 
-        y, x, _ = frame.shape
-        confidence_threshold = ANALYSIS_PARAMS['confidence_threshold']
-        
-        # 绘制关键点
+        h, w, _ = frame.shape
+
         for kp in keypoints:
-            ky, kx, kp_conf = kp
-            if kp_conf > confidence_threshold:
-                cv2.circle(frame, (int(kx * x), int(ky * y)), 5, (0, 255, 0), -1)
-        
-        # 绘制骨架连接
+            ky, kx = kp  # 注意这里是 normalized 坐标
+            px = int(kx * w)
+            py = int(ky * h)
+            cv2.circle(frame, (px, py), 5, (0, 255, 0), -1)
+
         connections = [
             (KEYPOINT_INDICES['LEFT_SHOULDER'], KEYPOINT_INDICES['RIGHT_SHOULDER']),
             (KEYPOINT_INDICES['LEFT_SHOULDER'], KEYPOINT_INDICES['LEFT_ELBOW']),
@@ -156,16 +153,15 @@ class PushupAnalyzer:
             (KEYPOINT_INDICES['RIGHT_HIP'], KEYPOINT_INDICES['RIGHT_KNEE']),
             (KEYPOINT_INDICES['RIGHT_KNEE'], KEYPOINT_INDICES['RIGHT_ANKLE'])
         ]
-        
+
         for start, end in connections:
             start_kp = keypoints[start]
             end_kp = keypoints[end]
+            start_point = (int(start_kp[1] * w), int(start_kp[0] * h))
+            end_point = (int(end_kp[1] * w), int(end_kp[0] * h))
+            cv2.line(frame, start_point, end_point, (0, 255, 255), 2)
             
-            if start_kp[2] > confidence_threshold and end_kp[2] > confidence_threshold:
-                start_point = (int(start_kp[1] * x), int(start_kp[0] * y))
-                end_point = (int(end_kp[1] * x), int(end_kp[0] * y))
-                cv2.line(frame, start_point, end_point, (0, 255, 255), 2)
+        frame = cv2.flip(frame, 1)
+        frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         
         return frame
-    
-    

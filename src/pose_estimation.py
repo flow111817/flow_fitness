@@ -1,14 +1,18 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 from . import utils
+from tensorflow.keras import models
 from config import MODEL_URL, KEYPOINT_INDICES
 
 class PoseEstimator:
     def __init__(self):
-        self.model = hub.load(MODEL_URL)
-        self.movenet = self.model.signatures['serving_default']
+        self.model = models.load_model(
+            './models/movenet_finetuned.h5',
+              custom_objects={'KerasLayer': hub.KerasLayer}
+              )
         self.keypoint_indices = KEYPOINT_INDICES
-        
+        print(self.model.summary())
+
     def detect_keypoints(self, frame):
         """
         使用MoveNet检测人体关键点
@@ -22,11 +26,10 @@ class PoseEstimator:
         img = frame.copy()
         img = tf.image.resize_with_pad(tf.expand_dims(img, axis=0), 256, 256)
         input_img = tf.cast(img, dtype=tf.int32)
-        
-        # 运行模型推理
-        outputs = self.movenet(input_img)
-        keypoints = outputs['output_0'].numpy()[0][0]
-        
+
+        # 模型输出仍然是字典
+        outputs = self.model(input_img)
+        keypoints = outputs.numpy()[0]
         return keypoints
     
     def get_keypoint_coordinates(self, frame, keypoints, keypoint_name):

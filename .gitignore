@@ -2,3 +2,5 @@ optimize.txt
 data/output/reports/*
 data/output/videos/*
 path.md
+training/images/*
+training/img.zip
