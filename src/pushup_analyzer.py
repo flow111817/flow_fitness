@@ -26,58 +26,7 @@ class PushupAnalyzer:
             'frames': []
         }
 
-    def analyze_frame(self, frame):
-        """
-        分析单帧图像，检测姿态并计数俯卧撑
-        
-        输入：帧
-        
-        输出：添加字后的帧
-        """
 
-        # 初始化时间
-        if self.start_time is None:
-            self.start_time = time.time()
-        current_time = time.time() - self.start_time
-        self.frame_counter += 1
-
-        # 检测关键点
-        keypoints = self.pose_estimator.detect_keypoints(frame)
-        
-        # 获取关键点坐标
-        y, x, _ = frame.shape
-        left_shoulder = self._get_keypoint_coord(frame, keypoints, 'LEFT_SHOULDER')
-        right_shoulder = self._get_keypoint_coord(frame, keypoints, 'RIGHT_SHOULDER')
-        left_elbow = self._get_keypoint_coord(frame, keypoints, 'LEFT_ELBOW')
-        right_elbow = self._get_keypoint_coord(frame, keypoints, 'RIGHT_ELBOW')
-        left_wrist = self._get_keypoint_coord(frame, keypoints, 'LEFT_WRIST')
-        right_wrist = self._get_keypoint_coord(frame, keypoints, 'RIGHT_WRIST')
-        
-        # 计算肘部角度
-        left_angle = utils.calculate_angle(left_shoulder, left_elbow, left_wrist)
-        right_angle = utils.calculate_angle(right_shoulder, right_elbow, right_wrist)
-        avg_angle = (left_angle + right_angle) / 2
-        
-        # 检测俯卧撑动作
-        if avg_angle < ANALYSIS_PARAMS['down_threshold']:
-            if not self.is_down_position:
-                self.is_down_position = True
-        elif avg_angle > ANALYSIS_PARAMS['up_threshold']:
-            if self.is_down_position:
-                self.pushup_count += 1
-                self.is_down_position = False
-        
-        # 存储数据用于报告和视频
-        self.analysis_data['timestamps'].append(current_time)
-        self.analysis_data['elbow_angles'].append(avg_angle)
-        self.analysis_data['pushup_counts'].append(self.pushup_count)
-        
-        # 采样帧用于视频生成
-        if self.frame_counter % 8 == 0 :
-            self.analysis_data['frames'].append(frame.copy())
-        
-        return self._annotate_frame(frame, keypoints, avg_angle, current_time)
-    
     def _get_keypoint_coord(self, frame, keypoints, keypoint_name):
         """
         获取关键点坐标
@@ -165,3 +114,56 @@ class PushupAnalyzer:
         frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
         
         return frame
+
+    def analyze_frame(self, frame):
+        """
+        分析单帧图像，检测姿态并计数俯卧撑
+        
+        输入：帧
+        
+        输出：添加字后的帧
+        """
+
+        # 初始化时间
+        if self.start_time is None:
+            self.start_time = time.time()
+        current_time = time.time() - self.start_time
+        self.frame_counter += 1
+
+        # 检测关键点
+        keypoints = self.pose_estimator.detect_keypoints(frame)
+        
+        # 获取关键点坐标
+        y, x, _ = frame.shape
+        left_shoulder = self._get_keypoint_coord(frame, keypoints, 'LEFT_SHOULDER')
+        right_shoulder = self._get_keypoint_coord(frame, keypoints, 'RIGHT_SHOULDER')
+        left_elbow = self._get_keypoint_coord(frame, keypoints, 'LEFT_ELBOW')
+        right_elbow = self._get_keypoint_coord(frame, keypoints, 'RIGHT_ELBOW')
+        left_wrist = self._get_keypoint_coord(frame, keypoints, 'LEFT_WRIST')
+        right_wrist = self._get_keypoint_coord(frame, keypoints, 'RIGHT_WRIST')
+        
+        # 计算肘部角度
+        left_angle = utils.calculate_angle(left_shoulder, left_elbow, left_wrist)
+        right_angle = utils.calculate_angle(right_shoulder, right_elbow, right_wrist)
+        avg_angle = (left_angle + right_angle) / 2
+        
+        # 检测俯卧撑动作
+        if avg_angle < ANALYSIS_PARAMS['down_threshold']:
+            if not self.is_down_position:
+                self.is_down_position = True
+        elif avg_angle > ANALYSIS_PARAMS['up_threshold']:
+            if self.is_down_position:
+                self.pushup_count += 1
+                self.is_down_position = False
+        
+        # 存储数据用于报告和视频
+        self.analysis_data['timestamps'].append(current_time)
+        self.analysis_data['elbow_angles'].append(avg_angle)
+        self.analysis_data['pushup_counts'].append(self.pushup_count)
+        
+        # 采样帧用于视频生成
+        if self.frame_counter % 8 == 0 :
+            self.analysis_data['frames'].append(self._draw_keypoints(frame, keypoints).copy())
+        
+        return self._annotate_frame(frame, keypoints, avg_angle, current_time)
+    
