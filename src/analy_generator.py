@@ -86,7 +86,6 @@ class ReportGenerator:
         plt.tight_layout()
         plt.subplots_adjust(bottom=0.1)
         plt.savefig(f'{report_path}.png', dpi=300)
-        plt.show()
         
         print(f"Analysis complete. Total pushups: {total_pushups}")
         print(f"Report saved as {report_path}.png")

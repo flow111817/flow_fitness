@@ -1,9 +1,9 @@
 # Fitness_optimization
-###Project Introduction
+### Project Introduction
 
 Lightweight push up motion recognition based on movenet, supporting real-time counting, keyframe capture, motion visualization analysis, suitable as an auxiliary tool for fitness
 
-###Project Features
+### Project Features
 
 -  ✅  Real time action recognition and counting
 -  🎥  Save keyframe animation as MP4
@@ -16,13 +16,13 @@ cd AwesomePushupCounter
 pip install -r requirements.txt
 python main.py
 ```
-###Instructions for use
+### Instructions for use
 
 
 In main. py, you can set whether to use a camera or a recorded video for recognition. In config. py, you can set parameters such as moving object, output directory, and analysis parameters
 
 
-###Project Structure
+### Project Structure
 
 ```
 ├── data/					
@@ -35,7 +35,7 @@ In main. py, you can set whether to use a camera or a recorded video for recogni
 ├── main.py					#main
 └── requirements.txt		#dependences
 ```
-###Follow up plan
+### Follow up plan
 
 - Add more fitness plans
 - Can be deployed to the front-end for video recognition
@@ -43,6 +43,6 @@ In main. py, you can set whether to use a camera or a recorded video for recogni
 - Integrating language models for action guidance
 - Fine tune the model to enhance accuracy
 
-###Contribution Guide
+### Contribution Guide
 
 Welcome to submit a Pull Request!

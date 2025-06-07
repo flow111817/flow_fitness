@@ -47,7 +47,7 @@ def realtime_analysis(camera_index=0):
 
 if __name__ == "__main__":
     # 使用摄像头1
-    realtime_analysis(camera_index=1)
+    realtime_analysis(camera_index=0)
     
     # 或者使用视频文件
     # realtime_analysis(camera_index='video.mp4')

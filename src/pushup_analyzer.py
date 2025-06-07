@@ -74,7 +74,7 @@ class PushupAnalyzer:
         
         # 采样帧用于视频生成
         if self.frame_counter % 8 == 0 :
-            self.analysis_data['frames'].append(frame.copy())
+            self.analysis_data['frames'].append(self._draw_keypoints(frame, keypoints).copy())
         
         return self._annotate_frame(frame, keypoints, avg_angle, current_time)
     
@@ -167,5 +167,4 @@ class PushupAnalyzer:
                 cv2.line(frame, start_point, end_point, (0, 255, 255), 2)
         
         return frame
-    
     
